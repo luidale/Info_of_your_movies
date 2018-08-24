@@ -1,3 +1,30 @@
+
+Skip to content
+
+    Pull requests
+    Issues
+    Marketplace
+    Explore
+
+    @luidale
+
+1
+0
+
+    0
+
+luidale/convert_SoftMax_data
+Code
+Issues 0
+Pull requests 0
+Projects 0
+Wiki
+Insights
+Settings
+convert_SoftMax_data/.gitignore
+e6c296e on May 12, 2017
+@luidale luidale Functions to separate files
+51 lines (39 sloc) 672 Bytes
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
@@ -16,6 +43,11 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+#Folders
+__pycache__/
+data
+old
 
 # =========================
 # Operating System Files
@@ -45,3 +77,19 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+    © 2018 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
+
+Press h to open a hovercard with more details.
