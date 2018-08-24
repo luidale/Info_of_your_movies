@@ -7,10 +7,11 @@ Main features:
 3)Checks existence of subtitles at http://www.subclub.eu
 3)Browses movies by genre and IMDB score
 
-![Screen_shot](screen_shot.GIF)
+![Screen_shot](screenshot.GIF)
 
 TO DO:
 1)Options to correct names
+2)Convert to Python3
 
 Licence
 -------
@@ -18,5 +19,5 @@ Licence
 
 Authors
 -------
-[Space_rally](https://github.com/luidale/Info_of_your_movies) was written by [Hannes Luidalepp](luidale@gmail.com) and Mikk Espenberg (score management)
+[Info_of_your_movies](https://github.com/luidale/Info_of_your_movies) was written by [Hannes Luidalepp](luidale@gmail.com) and Mikk Espenberg (score management)
 
