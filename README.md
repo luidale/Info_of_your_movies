@@ -13,15 +13,15 @@ Main features:
 
 ## Requirements
 1) Python 3+
-   and libraries: (guessit, IMDbPY)
+   and libraries: (guessit, IMDbPY,PIL)
  
     or
 
 2) you can run also provided stand-alone executable without any prerequisites (single portable exe-file which works out of the box).
   
-    Currently provided:
+    Soon will be provided:
   
-    [convert_SoftMax_data3_win8+.exe](https://github.com/luidale/convert_SoftMax_data/blob/master/convert_SoftMax_data3_win8+.exe)   - works at least in Windows 10 and Windows 8 (other OS-s not tested).
+    [info_of_your_movies_win8+.exe](https://github.com/luidale/Info_of_your_movies/blob/master/info_of_your_movies_win8+.exe)   - works at least in Windows 10 and Windows 8 (other OS-s not tested).
 
 
 ![Screen_shot](screenshot.GIF)
