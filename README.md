@@ -13,7 +13,7 @@ Main features:
 
 ## Requirements
 1) Python 3+
-   and libraries: (guessit, IMDbPY,PIL)
+   and libraries: (guessit, IMDbPY,pillow)
  
     or
 
