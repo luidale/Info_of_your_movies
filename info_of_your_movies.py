@@ -8,12 +8,20 @@
 #3)Movie list box into several columns
 #4)Use database to store movie data
 
-from Tkinter import *
+from tkinter import *
 import pickle
 import imdb
-import tkFileDialog
+from tkinter import filedialog
 from PIL import Image, ImageTk
 import os
+import re
+#http://guessit.readthedocs.org/en/latest/
+from guessit import guessit #now version 2
+import pickle
+import urllib.request as urllib
+import json
+
+movie_extensions=['avi', 'mp4', 'mkv', 'vob', 'divx','xvid','m4v'] #additional file formats can be added.
 
 def open_load_window(db_file):
     #is opening loading window
@@ -32,6 +40,27 @@ def open_load_window(db_file):
 def close_load_window():
     #is closing load window
     root_load.destroy()
+
+def open_search_window(db_file):
+    #is opening loading window
+    global root_search
+    global movia_data
+    root_search = Toplevel()
+    root_search.geometry(str(200+len(db_file.split("/")[-1])*10)+"x100")
+    frame=Frame(root_search)
+    frame.place(x=20,y=10)
+    sign = Label(frame, text = "Searching video files from:",
+                 font=18)
+    sign2 = Label(frame, text = db_file.split("/")[-1],
+                 font=18)
+    sign.grid(row=0, column=0,sticky = W)
+    sign2.grid(row=1, column=0,sticky = W)
+    root_search.update_idletasks()
+    root_search.update()
+
+def close_search_window():
+    #is closing load window
+    root_search.destroy()
 
 def show_big_cover(arg):
     #is opening big cover window
@@ -75,7 +104,7 @@ def onselect(evt):
         IndexError
     else:
         value = w.get(index).split("  -  ")[1]#movie name
-        print 'You selected item %d: "%s"' % (index, value)
+        print ('You selected item %d: "%s"' % (index, value))
         ##changing global variable of current movie
         global current_movie
         current_movie = value
@@ -153,7 +182,7 @@ def sub_menu():
     movie_sub.grid(row=4, column=0, sticky=N+S+E+W)
 
 def subtite(value):
-    print "a"
+    print ("a")
 
 def getKey(item):
     #function to sort movies by rating
@@ -236,7 +265,7 @@ def collect_sub_sites(movie_data):
 
 def browse_db():
     #selects movie database and generates list of types, genres and movies
-    db_file = tkFileDialog.askopenfilename(parent=root,title='Choose a file',filetypes=[('dbfiles', '.p'), ('all files', '.*')],initialdir="./data")
+    db_file = filedialog.askopenfilename(parent=root,title='Choose a file',filetypes=[('dbfiles', '.p'), ('all files', '.*')],initialdir="./data")
     if db_file.endswith(".p"):
         global movie_data
         global movie_types
@@ -246,6 +275,7 @@ def browse_db():
         ##window for loading
         open_load_window(db_file)
         movie_data = pickle.load(open(db_file,"rb"))
+        print(movie_data[list(movie_data.keys())[0]])
         ##collect types and genres
         movie_types =sorted(list(movie_data.keys()))
         genres = collect_genre(movie_data,movie_types)
@@ -312,6 +342,177 @@ def collect_genre(movie_data,movie_types):
     return genres
 
 
+def find_movies():
+    '''
+    finds vidoe files
+    '''
+    os.sep = "/"
+    output_file = "tere"
+    
+    input_folders = [filedialog.askdirectory(parent=root,title='Choose a folder',initialdir=".")]
+    db_file = filedialog.asksaveasfilename(parent=root,title='Save as',filetypes=[('dbfiles', '.p'), ('all files', '.*')],initialdir="./data")
+    open_search_window(input_folders[0])
+    #Finding files    
+    print("#Finding files")
+    movie_data = {} #(name,date,location)
+    for input_folder in input_folders:
+        print (input_folder)
+        movie_data = find_movies2(input_folder,movie_data)
+
+    #Collecting data
+    print("#Collect data")
+    #create folders when missing
+    if not os.path.isdir("data"):
+        os.mkdir("data")
+    if not os.path.isdir("data/cover"):
+        os.mkdir("data/cover")
+    if not os.path.isdir("data/big_cover"):
+        os.mkdir("data/big_cover")
+
+    i = imdb.IMDb()
+    for movie_type in sorted(movie_data.keys()):
+        print ("Type: ",movie_type)
+        for title in sorted(movie_data[movie_type].keys()):                    
+            print ("\t",title)
+            best_match = i.search_movie(title.split("--")[0])
+            if len(best_match) == 0: #if no matches
+                movie_data[movie_type][title]["imdb"] = "ND"
+                continue
+            best_match =i.search_movie(title.split("--")[0])[0] #first match is chosen
+            i.update(best_match)
+            #get the cover thumbnail
+            #maybe the best is ["full-size cover url"]
+            if "cover url" in list(best_match.keys()): #testing existence of url
+                if not os.path.isfile("data/cover/"+title+".jpg"):#in image will be downloaded if it does not exist
+                    urllib.urlretrieve(best_match["cover url"],"data/cover/"+title+".jpg")
+            if "full-size cover url" in list(best_match.keys()): #testing existence of url
+                if not os.path.isfile("data/big_cover/"+title+"_big.jpg"): #in image will be downloaded if it does not exist
+                    urllib.urlretrieve(best_match["full-size cover url"],"data/big_cover/"+title+"_big.jpg")
+            movie_data[movie_type][title]["imdb"]=best_match
+            if "rating" in best_match.keys():
+                print ("\t\t",best_match["rating"],best_match["title"])
+            #Request for subtitles
+            movie_data[movie_type][title]["subclub_eu"]= sublub_eu(best_match["title"])
+            print ("\t\tSubtitles:",movie_data[movie_type][title]["subclub_eu"])
+        print ("Number of "+movie_type+": ",len(movie_data[movie_type]))
+
+    print("Saving data")
+    close_search_window()
+    #json.dump(movie_data, open("data/"+output_file+".json", "wb" ),default=jdefault)
+    #print(db_file)
+    pickle.dump(movie_data, open(db_file.rstrip(".p")+".p", "wb" ))
+    
+def jdefault(o):
+    return o.__dict__
+
+
+
+def find_movies2(input_folder,movie_data):
+    #folder crowler which finds files and tests are they movies/episodes or not
+    for filename in os.listdir(input_folder):
+        filepath = os.path.join(input_folder, filename)
+        if os.path.isfile(filepath): #checks all files
+            if is_movie_file(filename): #checks if it is moviefile
+                ##############
+                #when file name is sample or folder is sample then not consider or go up one folder
+                ###########
+                movie_data = get_info(filename,filepath,movie_data) #creates info about movie/episode
+        elif os.path.isdir(filepath): #checks content of all folders
+            find_movies2(filepath,movie_data)
+        #print("A",movie_data)
+    return movie_data
+
+def is_movie_file(input_file):
+    #will test does file is a video file
+    if input_file.split(".")[-1] in movie_extensions: #testing the file extention
+        return True
+    return False
+
+def get_info(filename,filepath,movie_data):
+    #creats data about the video
+    item = guessit(filename) #is guessig movie name
+    #print("B",item)
+    print ("\t", filename)
+    if item["type"] not in movie_data:
+        movie_data[item["type"]] = {}
+    if item["type"] == "movie":
+        #data structure:
+        #{"title--year":{"title":title,"year":year,"path":[path]}}
+        title = get_info_property(item,filepath,"title")
+        print ("\t\t", title)
+        year = get_info_property(item,filepath,"year")
+        if title+"--"+year not in movie_data[item["type"]]:
+            movie_data[item["type"]][title+"--"+year]={}
+            movie_data[item["type"]][title+"--"+year]["title"]=title
+            movie_data[item["type"]][title+"--"+year]["year"]=year
+            movie_data[item["type"]][title+"--"+year]["path"]=[filepath]
+        else:
+            movie_data[item["type"]][title+"--"+year]["path"].append(filepath)
+        print ("\t\t", movie_data[item["type"]][title+"--"+year]["path"])
+    elif item["type"] == "episode":
+        #data structure:
+        #{"title":{"season--year":season--year,"episode":episode,"path":[path]}}
+        title = get_info_property(item,filepath,"title")
+        year = get_info_property(item,filepath,"year")
+        season = get_info_property(item,filepath,"season")
+        episode = get_info_property(item,filepath,"episode")
+        mother_folder = os.path.split(os.path.split(filepath)[0])[-1]
+       
+        if title.lower().find(get_info_property(guessit(mother_folder),mother_folder,"title").lower()) != -1:#for "friday night dinner" where each episode have uniqe series name but share name with folder
+            title = get_info_property(guessit(mother_folder),mother_folder,"title")
+        if title.lower() not in [x.lower() for x in list(movie_data[item["type"]].keys())]:
+            #checks titles in lower case to avoid multiple entries
+            movie_data[item["type"]][title] = {}
+        elif title not in movie_data[item["type"]]:
+            #if title exists but not in existing case the title in existinge case is given
+            title = sorted(list(movie_data[item["type"]].keys()))[sorted([x.lower() for x in list(movie_data[item["type"]].keys())]).index(title.lower())]
+
+        if season+"--"+year not in movie_data[item["type"]][title]:
+            movie_data[item["type"]][title][season+"--"+year] = {}
+        if episode not in movie_data[item["type"]][title][season+"--"+year]:                   
+            movie_data[item["type"]][title][season+"--"+year]["episode"]=episode
+            movie_data[item["type"]][title][season+"--"+year]["path"]=[filepath]
+        else:
+            movie_data[item["type"]][title][season+"--"+year]["path"].append(filepath)
+
+    return movie_data
+
+def get_info_property(item,filepath,property_name):
+    #gets specific data from guessit container
+    if property_name in item:
+        item_property = str(item[property_name])
+    else: #check parameter from folder name
+        item_new = guessit(os.path.split(os.path.split(filepath)[0])[-1])
+        if property_name in item_new:
+            item_property = str(item_new[property_name])
+        else:
+            item_property = "ND"
+    return item_property
+
+
+def sublub_eu(title):
+    #looks for subtitles from http://www.subclub.eu
+    #non-ASCII symbols will be replaced with "?"
+    page = urllib.urlopen("http://www.subclub.eu/jutud.php?otsing="+"+".join("".join([x if ord(x) < 128 else '?' for x in title]).split(" ")))
+    print ("\t\tSubtitle search:","http://www.subclub.eu/jutud.php?otsing="+"+".join(title.split(" ")))
+    for line in page:
+        line = line.decode()
+        if line.find("Sinu otsingule vastavaid jutustusi ei leidu kahjuks meie baasis!") != -1:
+            return "No subtitles"
+        if line.find("catch(e){}") != -1:
+            while True:
+                line = page.readline().decode()
+                if line.startswith("<a class"):
+                    return "http://www.subclub.eu"+get_link(line)
+#        if line.find('"title="Vastuseid leiti') != -1:
+    return "No subtitle"
+
+def get_link(line):
+    #gets link form specific HTML line
+    start = line.find('href="')+len('href="')
+    end = line[start:].find('"')+start
+    return line[start:end].strip(".")
+
 ######DATA#######
 small_cover_folder = "./data/cover"
 big_cover_folder = "./data/big_cover"
@@ -332,6 +533,7 @@ big_movie_img = collect_movie_img(big_cover_folder)
 root = Tk()
 root_big_cover = ""
 root_load = ""
+root_search = ""
 root.geometry("1150x610")
 root.title("Info of your movies")
 
@@ -341,7 +543,7 @@ frame_database.place(x=20,y=5)
 ###Find files
 sign_database = Label(frame_database, text = "Find")
 sign_database.grid(row=0, column=0,sticky = W)
-select_db = Button(frame_database, text="Find movies", command=browse_db)
+select_db = Button(frame_database, text="Find movies", command=find_movies)
 select_db.grid(row=1, column=0,sticky=W)
 ###Database
 frame_database=Frame(root)
